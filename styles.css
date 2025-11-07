@@ -363,34 +363,3 @@ input[type="color"] {
   height: calc(100vh - 64px);
   padding: 8px 12px 16px;
 }
-/* .canvas-container {
-  width: min(1200px, 96vw);
-  aspect-ratio: 16 / 10;
-}
-.preview-item {
-  width: 100%;
-  aspect-ratio: 4 / 3;
-}
-.sidebar-header {
-  display: flex;
-  gap: 12px;
-}
-.sidebar section + section {
-  margin-top: 14px;
-}
-.value-line {
-  color: var(--subtle);
-  font-size: 12px;
-  margin-left: 6px;
-}
-.btn-row {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  padding: 6px 0 2px;
-}
-.small {
-  font-size: 12px;
-  padding: 6px 8px;
-  border-radius: 8px;
-} */

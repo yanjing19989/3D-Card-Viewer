@@ -13,27 +13,13 @@
     <h1 class="main-title">炫酷卡片展示 · 3D</h1>
 
     <!-- 左右侧栏开关 -->
-    <button class="sidebar-toggle toggle-left" title="打开素材面板" id="openLeft">
-      ☰
-    </button>
-    <button class="sidebar-toggle toggle-right" title="打开参数面板" id="openRight">
-      ✦
-    </button>
+    <button class="sidebar-toggle toggle-left" title="打开素材面板" id="openLeft">☰</button>
+    <button class="sidebar-toggle toggle-right" title="打开参数面板" id="openRight">✦</button>
 
     <!-- 左侧栏：卡面选择与预览 -->
     <aside class="sidebar" id="leftSidebar">
       <header class="sidebar-header">
-        <div class="sidebar-title">素材</div>
-        <button class="help-btn small" data-help="help-assets">?</button>
-        <div class="help-popover" id="help-assets">
-          <div class="help-popover-inner">
-            支持拖入或选择 JPG/PNG/WebP。推荐使用相同尺寸的正反两面，以获得清晰效果。
-            文件不会上传，均在本地浏览器中渲染。
-          </div>
-        </div>
-        <div style="margin-left:auto;">
-          <button class="small" id="closeLeft">关闭</button>
-        </div>
+        <div class="sidebar-title-left">素材</div>
       </header>
 
       <div class="controls">
@@ -75,16 +61,7 @@
     <!-- 右侧栏：参数控制 -->
     <aside class="sidebar right" id="rightSidebar">
       <header class="sidebar-header">
-        <div class="sidebar-title-left">参数</div>
-        <button class="help-btn small" data-help="help-params">?</button>
-        <div class="help-popover" id="help-params">
-          <div class="help-popover-inner">
-            厚度仅影响几何深度；光源角度使用方位角与仰角；阴影不透明度控制投影强度。
-          </div>
-        </div>
-        <div style="margin-left:auto;">
-          <button class="small" id="closeRight">关闭</button>
-        </div>
+        <div class="sidebar-title">参数</div>
       </header>
 
       <div class="controls">
