@@ -54,9 +54,10 @@ let card, ground, ambient, dirLight;
 let frontMat, backMat, sideMat;
 let frontMap, backMap;
 
-// 卡片默认参数
-const CARD_W = 2.25;  // 标准卡宽 (单位)
-const CARD_H = 3.50;  // 标准卡高 (单位)
+// 卡片默认参数 (可变——由正面图片决定长宽)
+let CARD_W = 2.25;  // 标准卡宽 (单位)
+let CARD_H = 3.50;  // 标准卡高 (单位)
+const BASE_CARD_W = 2.25; // 当读取图片时以此为参考宽度，按图片长宽比计算高度
 let cardThickness = 0.06;
 let cornerRadius = 0.06;
 
@@ -110,6 +111,8 @@ function initMaterials() {
 
   frontMap = frontPlaceholder;
   backMap = backPlaceholder;
+
+  updateCardSizeFromTexture(frontMap);
 
   // 创建材质
   frontMat = new MeshPhysicalMaterial({
@@ -239,12 +242,12 @@ function setupControls() {
   bindRange(ui.thickness, (v) => {
     cardThickness = v;
     rebuildCard();
-  }, 'thicknessVal');
+  }, 'thicknessVal', (v) => Number(v).toFixed(3));
 
   bindRange(ui.cornerRadius, (v) => {
     cornerRadius = v;
     rebuildCard();
-  }, 'cornerRadiusVal');
+  }, 'cornerRadiusVal', (v) => Number(v).toFixed(3));
 
   // 光照参数
   bindRange(ui.dirIntensity, (v) => {
@@ -315,6 +318,8 @@ function setupFileInputs(textureLoader) {
       frontMap = tex;
       frontMat.map = frontMap;
       frontMat.needsUpdate = true;
+      // 根据图片尺寸更新卡片长宽并重建
+      if (updateCardSizeFromTexture(tex) && card) rebuildCard();
     }).finally(() => URL.revokeObjectURL(url));
   });
 
@@ -361,6 +366,7 @@ function setupDragAndDrop(textureLoader) {
           frontMap = tex;
           frontMat.map = frontMap;
           frontMat.needsUpdate = true;
+          if (updateCardSizeFromTexture(tex) && card) rebuildCard();
         }).finally(() => URL.revokeObjectURL(url));
       } else {
         ui.backPreview.src = url;
@@ -406,6 +412,8 @@ function setupButtons() {
     ui.backPreview.src = tmpSrc;
     frontMat.needsUpdate = true;
     backMat.needsUpdate = true;
+    // 交换后如果新的正面纹理包含图像信息，则根据其尺寸更新卡片并重建
+    if (updateCardSizeFromTexture(frontMat.map) && card) rebuildCard();
   });
 }
 
@@ -490,6 +498,15 @@ function makePlaceholder(text, color) {
   const tex = new THREE.CanvasTexture(c);
   texOpts(tex);
   return tex;
+}
+
+// 根据纹理的图像尺寸更新卡片宽高（前面纹理决定卡片尺寸）
+function updateCardSizeFromTexture(tex) {
+  if (!tex || !tex.image) return false;
+  const aspect = tex.image.width / tex.image.height;
+  CARD_W = BASE_CARD_W;
+  CARD_H = BASE_CARD_W / aspect;
+  return true;
 }
 
 function shade(hex, amt) {
