@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover"
+    />
+    <title>炫酷卡片展示 - 3D Viewer</title>
+    <link rel="stylesheet" href="./styles.css" />   
+  </head>
+  <body>
+    <h1 class="main-title">炫酷卡片展示 · 3D</h1>
+
+    <!-- 左右侧栏开关 -->
+    <button class="sidebar-toggle toggle-left" title="打开素材面板" id="openLeft">
+      ☰
+    </button>
+    <button class="sidebar-toggle toggle-right" title="打开参数面板" id="openRight">
+      ✦
+    </button>
+
+    <!-- 左侧栏：卡面选择与预览 -->
+    <aside class="sidebar" id="leftSidebar">
+      <header class="sidebar-header">
+        <div class="sidebar-title">素材</div>
+        <button class="help-btn small" data-help="help-assets">?</button>
+        <div class="help-popover" id="help-assets">
+          <div class="help-popover-inner">
+            支持拖入或选择 JPG/PNG/WebP。推荐使用相同尺寸的正反两面，以获得清晰效果。
+            文件不会上传，均在本地浏览器中渲染。
+          </div>
+        </div>
+        <div style="margin-left:auto;">
+          <button class="small" id="closeLeft">关闭</button>
+        </div>
+      </header>
+
+      <div class="controls">
+        <section class="control-group">
+          <div class="control-group-header">
+            <h3>卡面图片</h3>
+          </div>
+          <div class="image-inputs">
+            <div class="image-input-group">
+              <label for="frontImg">正面卡面</label>
+              <input type="file" id="frontImg" accept="image/*" />
+              <div class="preview-item"><img id="frontPreview" alt="正面预览" /></div>
+            </div>
+
+            <div class="image-input-group">
+              <label for="backImg">背面卡面</label>
+              <input type="file" id="backImg" accept="image/*" />
+              <div class="preview-item"><img id="backPreview" alt="背面预览" /></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="control-group">
+          <div class="control-group-header">
+            <h3>操作</h3>
+          </div>
+          <div class="btn-row">
+            <button id="resetView">重置视角</button>
+            <button id="exportPng">保存快照</button>
+            <button id="swapFaces">交换正反</button>
+          </div>
+          <div class="control-item" style="padding-top:2px">
+            <span class="value-line">提示：按住鼠标左键拖拽旋转，滚轮缩放，右键拖拽平移。</span>
+          </div>
+        </section>
+      </div>
+    </aside>
+
+    <!-- 右侧栏：参数控制 -->
+    <aside class="sidebar right" id="rightSidebar">
+      <header class="sidebar-header">
+        <div class="sidebar-title-left">参数</div>
+        <button class="help-btn small" data-help="help-params">?</button>
+        <div class="help-popover" id="help-params">
+          <div class="help-popover-inner">
+            厚度仅影响几何深度；光源角度使用方位角与仰角；阴影不透明度控制投影强度。
+          </div>
+        </div>
+        <div style="margin-left:auto;">
+          <button class="small" id="closeRight">关闭</button>
+        </div>
+      </header>
+
+      <div class="controls">
+        <section class="control-group">
+          <div class="control-group-header">
+            <h3>卡片</h3>
+          </div>
+
+          <div class="control-item">
+            <label for="thickness">厚度: <span id="thicknessVal" class="value-display">0.06</span> u</label>
+            <input type="range" id="thickness" min="0.015" max="0.20" step="0.005" value="0.06" />
+          </div>
+
+          <div class="control-item">
+            <label for="cornerRadius">圆角: <span id="cornerRadiusVal" class="value-display">0.06</span> u</label>
+            <input type="range" id="cornerRadius" min="0.00" max="0.20" step="0.005" value="0.06" />
+          </div>
+        </section>
+
+        <section class="control-group">
+          <div class="control-group-header">
+            <h3>光效</h3>
+          </div>
+
+          <div class="control-item">
+            <label for="dirIntensity">光强度: <span id="dirIntensityVal" class="value-display">1.2</span></label>
+            <input type="range" id="dirIntensity" min="0" max="3" step="0.05" value="1.2" />
+          </div>
+
+          <div class="control-item">
+            <label for="ambIntensity">环境光: <span id="ambIntensityVal" class="value-display">0.35</span></label>
+            <input type="range" id="ambIntensity" min="0" max="2" step="0.05" value="0.35" />
+          </div>
+
+          <div class="control-item">
+            <label for="azimuth">方位角: <span id="azimuthVal" class="value-display">45</span>°</label>
+            <input type="range" id="azimuth" min="0" max="360" step="1" value="45" />
+          </div>
+
+          <div class="control-item">
+            <label for="elevation">仰角: <span id="elevationVal" class="value-display">45</span>°</label>
+            <input type="range" id="elevation" min="5" max="85" step="1" value="45" />
+          </div>
+        </section>
+
+        <section class="control-group">
+          <div class="control-group-header">
+            <h3>阴影</h3>
+          </div>
+
+          <div class="control-item">
+            <label for="shadowOpacity">阴影不透明度: <span id="shadowOpacityVal" class="value-display">0.35</span></label>
+            <input type="range" id="shadowOpacity" min="0" max="0.9" step="0.01" value="0.35" />
+          </div>
+
+          <div class="control-item">
+            <label for="shadowSoft">阴影柔和度: <span id="shadowSoftVal" class="value-display">2.0</span></label>
+            <input type="range" id="shadowSoft" min="0" max="8" step="0.1" value="2" />
+          </div>
+        </section>
+
+        <section class="control-group">
+          <div class="control-group-header">
+            <h3>材质</h3>
+          </div>
+
+          <div class="control-item">
+            <label for="roughness">粗糙度: <span id="roughnessVal" class="value-display">0.62</span></label>
+            <input type="range" id="roughness" min="0" max="1" step="0.01" value="0.62" />
+          </div>
+
+          <div class="control-item">
+            <label for="metalness">金属度: <span id="metalnessVal" class="value-display">0.00</span></label>
+            <input type="range" id="metalness" min="0" max="1" step="0.01" value="0.00" />
+          </div>
+
+          <div class="control-item">
+            <label for="clearcoat">清漆: <span id="clearcoatVal" class="value-display">0.35</span></label>
+            <input type="range" id="clearcoat" min="0" max="1" step="0.01" value="0.35" />
+          </div>
+
+          <div class="control-item">
+            <label for="clearcoatRoughness">清漆粗糙: <span id="clearcoatRoughnessVal" class="value-display">0.50</span></label>
+            <input type="range" id="clearcoatRoughness" min="0" max="1" step="0.01" value="0.5" />
+          </div>
+        </section>
+      </div>
+    </aside>
+
+    <main class="container">
+      <div class="canvas-container">
+        <canvas id="glCanvas"></canvas>
+      </div>
+    </main>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+        }
+      }
+    </script>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
