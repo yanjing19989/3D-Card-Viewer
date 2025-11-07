@@ -239,6 +239,28 @@ function bindRange(input, onChange, labelId, format = (v) => v) {
   };
   input.addEventListener('input', apply);
   apply();
+
+  // 手机端拖拽滑块时临时隐藏右侧边栏
+  let isDragging = false;
+  const hideSidebarOnDrag = () => {
+    if (window.innerWidth <= 768 && rightSidebar.classList.contains('open')) {
+      isDragging = true;
+      rightSidebar.style.opacity = '0';
+      rightSidebar.style.pointerEvents = 'none';
+    }
+  };
+  const showSidebarOnRelease = () => {
+    if (isDragging) {
+      isDragging = false;
+      rightSidebar.style.opacity = '';
+      rightSidebar.style.pointerEvents = '';
+    }
+  };
+
+  // 监听触摸和鼠标事件
+  input.addEventListener('pointerdown', hideSidebarOnDrag);
+  input.addEventListener('pointerup', showSidebarOnRelease);
+  input.addEventListener('pointercancel', showSidebarOnRelease);
 }
 
 function setupControls() {

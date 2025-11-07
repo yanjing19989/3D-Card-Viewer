@@ -139,7 +139,7 @@ body {
   -webkit-backdrop-filter: saturate(140%) blur(12px);
   border-right: 1px solid var(--border);
   transform: translateX(-100%);
-  transition: transform var(--t-slow) ease;
+  transition: transform var(--t-slow) ease, opacity var(--t-fast) ease;
   z-index: 15;
   box-shadow: var(--shadow);
   overflow: hidden auto;
