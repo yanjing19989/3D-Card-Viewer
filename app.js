@@ -68,7 +68,7 @@ function initThreeJS() {
 
   // 相机
   camera = new PerspectiveCamera(35, 1, 0.01, 100);
-  camera.position.set(0.8, 0.9, 3.7);
+  camera.position.set(-2, -2, 3);
 
   // 渲染器
   renderer = new WebGLRenderer({ canvas, antialias: true, alpha: true });
@@ -160,7 +160,7 @@ function initScene() {
     new ShadowMaterial({ opacity: parseFloat(ui.shadowOpacity.value) })
   );
   ground.rotation.x = -Math.PI / 2;
-  ground.position.y = -1.1;
+  ground.position.y = -(CARD_H / 2 + 0.05); // 位于卡片底部下方一点
   ground.receiveShadow = true;
   scene.add(ground);
 
@@ -173,6 +173,10 @@ function initScene() {
   dirLight.shadow.mapSize.set(2048, 2048);
   dirLight.shadow.camera.near = 0.1;
   dirLight.shadow.camera.far = 25;
+  dirLight.shadow.camera.left = -5;
+  dirLight.shadow.camera.right = 5;
+  dirLight.shadow.camera.top = 5;
+  dirLight.shadow.camera.bottom = -5;
   dirLight.shadow.radius = parseFloat(ui.shadowSoft.value);
   updateLightDirection();
   scene.add(dirLight);
@@ -384,7 +388,7 @@ function setupDragAndDrop(textureLoader) {
 function setupButtons() {
   // 重置视角
   ui.resetView.addEventListener('click', () => {
-    camera.position.set(0.8, 0.9, 3.7);
+    camera.position.set(-2, -2, 3);
     controls.target.set(0, 0, 0);
     controls.update();
   });
@@ -456,6 +460,10 @@ function rebuildCard() {
   const newGeo = makeCardGeometry(CARD_W, CARD_H, cardThickness, cornerRadius);
   card.geometry.dispose();
   card.geometry = newGeo;
+  // 更新地面位置以匹配新的卡片高度
+  if (ground) {
+    ground.position.y = -(CARD_H / 2 + 0.05);
+  }
 }
 
 function makePlaceholder(text, color) {
