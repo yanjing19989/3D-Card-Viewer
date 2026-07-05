@@ -1,6 +1,6 @@
-import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
-import { OrbitControls } from 'https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js';
-import { RoundedBoxGeometry } from 'https://unpkg.com/three@0.160.0/examples/jsm/geometries/RoundedBoxGeometry.js';
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
 const {
   Scene, PerspectiveCamera, WebGLRenderer,
@@ -53,6 +53,7 @@ let scene, camera, renderer, controls;
 let card, ground, ambient, dirLight;
 let frontMat, backMat, sideMat;
 let frontMap, backMap;
+let animationFrameId = null;
 
 // 卡片默认参数 (可变——由正面图片决定长宽)
 let CARD_W = 2.25;  // 标准卡宽 (单位)
@@ -60,6 +61,8 @@ let CARD_H = 3.50;  // 标准卡高 (单位)
 const BASE_CARD_W = 2.25; // 当读取图片时以此为参考宽度，按图片长宽比计算高度
 let cardThickness = 0.06;
 let cornerRadius = 0.06;
+const lightPosition = new Vector3();
+const placeholderMaps = new Set();
 
 function initThreeJS() {
   // 场景
@@ -106,8 +109,8 @@ function initMaterials() {
   const textureLoader = new TextureLoader();
 
   // 创建占位纹理
-  const frontPlaceholder = makePlaceholder('FRONT', '#6aa9ff');
-  const backPlaceholder = makePlaceholder('BACK', '#7bd8b0');
+  const frontPlaceholder = registerPlaceholder(makePlaceholder('FRONT', '#6aa9ff'));
+  const backPlaceholder = registerPlaceholder(makePlaceholder('BACK', '#7bd8b0'));
 
   frontMap = frontPlaceholder;
   backMap = backPlaceholder;
@@ -178,6 +181,7 @@ function initScene() {
   dirLight.shadow.camera.top = 5;
   dirLight.shadow.camera.bottom = -5;
   dirLight.shadow.radius = parseFloat(ui.shadowSoft.value);
+  scene.add(dirLight.target);
   updateLightDirection();
   scene.add(dirLight);
 }
@@ -193,9 +197,20 @@ function resize() {
 }
 
 function animate() {
-  requestAnimationFrame(animate);
+  animationFrameId = requestAnimationFrame(animate);
   controls.update();
   renderer.render(scene, camera);
+}
+
+function startAnimation() {
+  if (animationFrameId !== null) return;
+  animate();
+}
+
+function stopAnimation() {
+  if (animationFrameId === null) return;
+  cancelAnimationFrame(animationFrameId);
+  animationFrameId = null;
 }
 
 // ========== 侧边栏控制 ==========
@@ -203,23 +218,8 @@ function setupSidebarControls() {
   const toggleLeftBtn = getEl('openLeft');
   const toggleRightBtn = getEl('openRight');
 
-  // 左侧栏切换
-  toggleLeftBtn.addEventListener('click', () => {
-    if (leftSidebar.classList.contains('open')) {
-      leftSidebar.classList.remove('open');
-    } else {
-      leftSidebar.classList.add('open');
-    }
-  });
-
-  // 右侧栏切换
-  toggleRightBtn.addEventListener('click', () => {
-    if (rightSidebar.classList.contains('open')) {
-      rightSidebar.classList.remove('open');
-    } else {
-      rightSidebar.classList.add('open');
-    }
-  });
+  toggleLeftBtn.addEventListener('click', () => leftSidebar.classList.toggle('open'));
+  toggleRightBtn.addEventListener('click', () => rightSidebar.classList.toggle('open'));
 
   // ESC 键关闭侧栏
   document.addEventListener('keydown', (e) => {
@@ -264,63 +264,30 @@ function bindRange(input, onChange, labelId, format = (v) => v) {
 }
 
 function setupControls() {
-  // 卡片参数
-  bindRange(ui.thickness, (v) => {
-    cardThickness = v;
-    rebuildCard();
-  }, 'thicknessVal', (v) => Number(v).toFixed(3));
+  const fixed3 = (v) => Number(v).toFixed(3);
+  const fixed1 = (v) => Number(v).toFixed(1);
+  const fixed2 = (v) => Number(v).toFixed(2);
+  const setFaceMaterial = (prop, val) => {
+    frontMat[prop] = val;
+    backMat[prop] = val;
+  };
 
-  bindRange(ui.cornerRadius, (v) => {
-    cornerRadius = v;
-    rebuildCard();
-  }, 'cornerRadiusVal', (v) => Number(v).toFixed(3));
-
-  // 光照参数
-  bindRange(ui.dirIntensity, (v) => {
-    dirLight.intensity = v;
-  }, 'dirIntensityVal');
-
-  bindRange(ui.ambIntensity, (v) => {
-    ambient.intensity = v;
-  }, 'ambIntensityVal');
-
-  bindRange(ui.azimuth, (v) => {
-    updateLightDirection();
-  }, 'azimuthVal');
-
-  bindRange(ui.elevation, (v) => {
-    updateLightDirection();
-  }, 'elevationVal');
-
-  // 阴影参数
-  bindRange(ui.shadowOpacity, (v) => {
-    ground.material.opacity = v;
-  }, 'shadowOpacityVal');
-
-  bindRange(ui.shadowSoft, (v) => {
-    dirLight.shadow.radius = v;
-  }, 'shadowSoftVal', (v) => Number(v).toFixed(1));
-
-  // 材质参数
-  bindRange(ui.roughness, (v) => {
-    frontMat.roughness = v;
-    backMat.roughness = v;
-  }, 'roughnessVal');
-
-  bindRange(ui.metalness, (v) => {
-    frontMat.metalness = v;
-    backMat.metalness = v;
-  }, 'metalnessVal');
-
-  bindRange(ui.clearcoat, (v) => {
-    frontMat.clearcoat = v;
-    backMat.clearcoat = v;
-  }, 'clearcoatVal');
-
-  bindRange(ui.clearcoatRoughness, (v) => {
-    frontMat.clearcoatRoughness = v;
-    backMat.clearcoatRoughness = v;
-  }, 'clearcoatRoughnessVal', (v) => Number(v).toFixed(2));
+  [
+    [ui.thickness, 'thicknessVal', fixed3, (v) => { cardThickness = v; rebuildCard(); }],
+    [ui.cornerRadius, 'cornerRadiusVal', fixed3, (v) => { cornerRadius = v; rebuildCard(); }],
+    [ui.dirIntensity, 'dirIntensityVal', undefined, (v) => { dirLight.intensity = v; }],
+    [ui.ambIntensity, 'ambIntensityVal', undefined, (v) => { ambient.intensity = v; }],
+    [ui.azimuth, 'azimuthVal', undefined, updateLightDirection],
+    [ui.elevation, 'elevationVal', undefined, updateLightDirection],
+    [ui.shadowOpacity, 'shadowOpacityVal', undefined, (v) => { ground.material.opacity = v; }],
+    [ui.shadowSoft, 'shadowSoftVal', fixed1, (v) => { dirLight.shadow.radius = v; }],
+    [ui.roughness, 'roughnessVal', undefined, (v) => setFaceMaterial('roughness', v)],
+    [ui.metalness, 'metalnessVal', undefined, (v) => setFaceMaterial('metalness', v)],
+    [ui.clearcoat, 'clearcoatVal', undefined, (v) => setFaceMaterial('clearcoat', v)],
+    [ui.clearcoatRoughness, 'clearcoatRoughnessVal', fixed2, (v) => setFaceMaterial('clearcoatRoughness', v)],
+  ].forEach(([input, labelId, format, onChange]) => {
+    bindRange(input, onChange, labelId, format);
+  });
 }
 
 // ========== 文件加载 ==========
@@ -334,41 +301,22 @@ function loadTexture(url, textureLoader) {
 }
 
 function setupFileInputs(textureLoader) {
-  // 正面图片
-  ui.frontImg.addEventListener('change', async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    ui.frontPreview.src = url;
-    loadTexture(url, textureLoader).then(tex => {
-      frontMap = tex;
-      frontMat.map = frontMap;
-      frontMat.needsUpdate = true;
-      // 根据图片尺寸更新卡片长宽并重建
-      if (updateCardSizeFromTexture(tex) && card) rebuildCard();
-    }).finally(() => URL.revokeObjectURL(url));
+  ui.frontImg.addEventListener('change', (e) => {
+    applyTextureFile('front', e.target.files?.[0], textureLoader);
+  });
+  ui.backImg.addEventListener('change', (e) => {
+    applyTextureFile('back', e.target.files?.[0], textureLoader);
   });
 
-  // 背面图片
-  ui.backImg.addEventListener('change', async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    ui.backPreview.src = url;
-    loadTexture(url, textureLoader).then(tex => {
-      backMap = tex;
-      backMat.map = backMap;
-      backMat.needsUpdate = true;
-    }).finally(() => URL.revokeObjectURL(url));
-  });
-
-  // 拖放支持
   setupDragAndDrop(textureLoader);
 }
 
 function setupDragAndDrop(textureLoader) {
-  ['frontPreview', 'backPreview'].forEach(id => {
-    const el = getEl(id).parentElement;
+  [
+    ['front', ui.frontPreview],
+    ['back', ui.backPreview],
+  ].forEach(([face, preview]) => {
+    const el = preview.parentElement;
     
     el.addEventListener('dragover', (ev) => {
       ev.preventDefault();
@@ -382,28 +330,41 @@ function setupDragAndDrop(textureLoader) {
     el.addEventListener('drop', (ev) => {
       ev.preventDefault();
       el.style.outline = '';
-      const file = ev.dataTransfer?.files?.[0];
-      if (!file) return;
-      const url = URL.createObjectURL(file);
-      
-      if (id === 'frontPreview') {
-        ui.frontPreview.src = url;
-        loadTexture(url, textureLoader).then(tex => {
-          frontMap = tex;
-          frontMat.map = frontMap;
-          frontMat.needsUpdate = true;
-          if (updateCardSizeFromTexture(tex) && card) rebuildCard();
-        }).finally(() => URL.revokeObjectURL(url));
-      } else {
-        ui.backPreview.src = url;
-        loadTexture(url, textureLoader).then(tex => {
-          backMap = tex;
-          backMat.map = backMap;
-          backMat.needsUpdate = true;
-        }).finally(() => URL.revokeObjectURL(url));
-      }
+      applyTextureFile(face, ev.dataTransfer?.files?.[0], textureLoader);
     });
   });
+}
+
+async function applyTextureFile(face, file, textureLoader) {
+  if (!file || !file.type.startsWith('image/')) return;
+
+  const preview = face === 'front' ? ui.frontPreview : ui.backPreview;
+  const material = face === 'front' ? frontMat : backMat;
+  const previewUrl = URL.createObjectURL(file);
+  const textureUrl = URL.createObjectURL(file);
+
+  preview.onload = preview.onerror = () => URL.revokeObjectURL(previewUrl);
+  preview.src = previewUrl;
+
+  try {
+    const tex = await loadTexture(textureUrl, textureLoader);
+    const oldMap = material.map;
+    material.map = tex;
+    material.needsUpdate = true;
+
+    if (face === 'front') {
+      frontMap = tex;
+      if (updateCardSizeFromTexture(tex) && card) rebuildCard();
+    } else {
+      backMap = tex;
+    }
+
+    disposeReplacedTexture(oldMap, tex, face);
+  } catch (err) {
+    console.error('图片加载失败', err);
+  } finally {
+    URL.revokeObjectURL(textureUrl);
+  }
 }
 
 // ========== 按钮操作 ==========
@@ -467,10 +428,9 @@ function updateLightDirection() {
   const az = MathUtils.degToRad(parseFloat(ui.azimuth.value));
   const el = MathUtils.degToRad(parseFloat(ui.elevation.value));
   const r = 8.0;
-  const pos = new Vector3().setFromSphericalCoords(r, Math.PI / 2 - el, az);
-  dirLight.position.copy(pos);
+  lightPosition.setFromSphericalCoords(r, Math.PI / 2 - el, az);
+  dirLight.position.copy(lightPosition);
   dirLight.target.position.set(0, 0, 0);
-  scene.add(dirLight.target);
 }
 
 function makeCardGeometry(w, h, d, r) {
@@ -530,6 +490,17 @@ function makePlaceholder(text, color) {
   return tex;
 }
 
+function registerPlaceholder(tex) {
+  placeholderMaps.add(tex);
+  return tex;
+}
+
+function disposeReplacedTexture(oldTex, newTex, face) {
+  const otherMap = face === 'front' ? backMat?.map : frontMat?.map;
+  if (!oldTex || oldTex === newTex || oldTex === otherMap || placeholderMaps.has(oldTex)) return;
+  oldTex.dispose();
+}
+
 // 根据纹理的图像尺寸更新卡片宽高（前面纹理决定卡片尺寸）
 function updateCardSizeFromTexture(tex) {
   if (!tex || !tex.image) return false;
@@ -562,6 +533,16 @@ function initPreviews() {
   ui.backPreview.src = toURL(backMap);
 }
 
+function setupVisibilityHandling() {
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      stopAnimation();
+    } else {
+      startAnimation();
+    }
+  });
+}
+
 // ========== 主初始化 ==========
 function init() {
   // 初始化 Three.js
@@ -579,6 +560,7 @@ function init() {
   setupFileInputs(textureLoader);
   setupButtons();
   setupTouchEnhancements();
+  setupVisibilityHandling();
   
   // 初始化预览
   initPreviews();
@@ -586,7 +568,7 @@ function init() {
   // 启动渲染
   window.addEventListener('resize', resize, { passive: true });
   resize();
-  animate();
+  startAnimation();
 }
 
 // 页面加载完成后初始化
