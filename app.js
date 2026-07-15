@@ -75,12 +75,13 @@ function initThreeJS() {
   camera.position.set(-2, -2, 3);
 
   // 渲染器
-  renderer = new WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer = new WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
   renderer.outputColorSpace = SRGBColorSpace;
   renderer.toneMapping = ACESFilmicToneMapping;
-  renderer.shadowMap.enabled = true;
+  // 阴影在首帧完成后再启用，优先让卡片尽快显示出来。
+  renderer.shadowMap.enabled = false;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 
   // 轨道控制器 (支持触摸操作)
   controls = new OrbitControls(camera, renderer.domElement);
@@ -174,7 +175,7 @@ function initScene() {
 
   dirLight = new DirectionalLight(0xffffff, parseFloat(ui.dirIntensity.value));
   dirLight.castShadow = true;
-  dirLight.shadow.mapSize.set(2048, 2048);
+  dirLight.shadow.mapSize.set(1024, 1024);
   dirLight.shadow.camera.near = 0.1;
   dirLight.shadow.camera.far = 25;
   dirLight.shadow.camera.left = -5;
@@ -454,7 +455,7 @@ function rebuildCard() {
 }
 
 function makePlaceholder(text, color) {
-  const size = 1024;
+  const size = 512;
   const c = document.createElement('canvas');
   c.width = c.height = size;
   const ctx = c.getContext('2d');
@@ -485,7 +486,7 @@ function makePlaceholder(text, color) {
 
   // 文字
   ctx.fillStyle = 'rgba(255,255,255,0.92)';
-  ctx.font = 'bold 140px system-ui, -apple-system, Segoe UI, Roboto, Arial';
+  ctx.font = 'bold 70px system-ui, -apple-system, Segoe UI, Roboto, Arial';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(text, size / 2, size / 2);
@@ -593,7 +594,11 @@ function init() {
   window.addEventListener('beforeunload', revokePreviewObjectUrls, { once: true });
   resize();
   startAnimation();
+
+  const enableShadows = () => { renderer.shadowMap.enabled = true; };
+  if (window.requestIdleCallback) window.requestIdleCallback(enableShadows, { timeout: 600 });
+  else window.setTimeout(enableShadows, 120);
 }
 
-// 页面加载完成后初始化
-window.addEventListener('load', init);
+// 模块脚本会在 DOM 解析完成后执行，无需再等待 window.load。
+init();
