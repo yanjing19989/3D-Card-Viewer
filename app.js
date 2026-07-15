@@ -53,6 +53,7 @@ let scene, camera, renderer, controls;
 let card, ground, ambient, dirLight;
 let frontMat, backMat, sideMat;
 let frontMap, backMap;
+const previewObjectUrls = { front: null, back: null };
 let animationFrameId = null;
 
 // 卡片默认参数 (可变——由正面图片决定长宽)
@@ -338,13 +339,11 @@ function setupDragAndDrop(textureLoader) {
 async function applyTextureFile(face, file, textureLoader) {
   if (!file || !file.type.startsWith('image/')) return;
 
-  const preview = face === 'front' ? ui.frontPreview : ui.backPreview;
   const material = face === 'front' ? frontMat : backMat;
   const previewUrl = URL.createObjectURL(file);
   const textureUrl = URL.createObjectURL(file);
 
-  preview.onload = preview.onerror = () => URL.revokeObjectURL(previewUrl);
-  preview.src = previewUrl;
+  setPreviewSource(face, previewUrl);
 
   try {
     const tex = await loadTexture(textureUrl, textureLoader);
@@ -391,12 +390,18 @@ function setupButtons() {
 
   // 交换正反面
   ui.swapFaces.addEventListener('click', () => {
-    const tmpTex = frontMat.map;
-    frontMat.map = backMat.map;
-    backMat.map = tmpTex;
+    [frontMap, backMap] = [backMap, frontMap];
+    frontMat.map = frontMap;
+    backMat.map = backMap;
+
     const tmpSrc = ui.frontPreview.src;
     ui.frontPreview.src = ui.backPreview.src;
     ui.backPreview.src = tmpSrc;
+    [previewObjectUrls.front, previewObjectUrls.back] = [
+      previewObjectUrls.back,
+      previewObjectUrls.front,
+    ];
+
     frontMat.needsUpdate = true;
     backMat.needsUpdate = true;
     // 交换后如果新的正面纹理包含图像信息，则根据其尺寸更新卡片并重建
@@ -533,6 +538,24 @@ function initPreviews() {
   ui.backPreview.src = toURL(backMap);
 }
 
+function setPreviewSource(face, source) {
+  const preview = face === 'front' ? ui.frontPreview : ui.backPreview;
+  const oldUrl = previewObjectUrls[face];
+
+  preview.src = source;
+  previewObjectUrls[face] = source;
+
+  if (oldUrl && oldUrl !== source) URL.revokeObjectURL(oldUrl);
+}
+
+function revokePreviewObjectUrls() {
+  Object.values(previewObjectUrls).forEach((url) => {
+    if (url) URL.revokeObjectURL(url);
+  });
+  previewObjectUrls.front = null;
+  previewObjectUrls.back = null;
+}
+
 function setupVisibilityHandling() {
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
@@ -567,6 +590,7 @@ function init() {
   
   // 启动渲染
   window.addEventListener('resize', resize, { passive: true });
+  window.addEventListener('beforeunload', revokePreviewObjectUrls, { once: true });
   resize();
   startAnimation();
 }
