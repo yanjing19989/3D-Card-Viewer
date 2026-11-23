@@ -1,4 +1,4 @@
-# 炫酷卡片展示 · 3D
+# <img src="./favicon.ico" width="32" height="32" alt="应用图标" /> 炫酷卡片展示 · 3D
 
 一个基于 Three.js 的交互式 3D 卡片展示工具，支持自定义卡面、实时调整材质和光照效果。
 
@@ -100,6 +100,7 @@ npx serve
 ```
 card3d/
 ├── index.html         # 主页面
+├── favicon.ico        # 浏览器网页图标
 ├── app.js             # 核心逻辑和 Three.js 场景
 ├── styles.css         # 样式文件（支持深色/浅色主题）
 ├── LICENSE            # 许可证文件
